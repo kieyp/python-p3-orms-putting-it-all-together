@@ -33,16 +33,23 @@ class Dog:
         CURSOR.execute(sql)
         CONN.commit()
         
-        
     def save(self):
-        sql = """
-            INSERT INTO dogs (name, breed)
-            VALUES (?, ?)
-        """
-
-        CURSOR.execute(sql, (self.name, self.breed))
-        CONN.commit()
+        if self.id is None:  # Check if the Dog instance has an ID assigned
+            # If the Dog instance doesn't have an ID assigned, insert a new row into the database
+            sql = """
+                INSERT INTO dogs (name, breed)
+                VALUES (?, ?)
+            """
+            CURSOR.execute(sql, (self.name, self.breed))
+            
+            # Update the instance's ID with the last inserted row ID
+            self.id = CURSOR.lastrowid
+            
+            # Commit the changes to the database
+            CONN.commit()
         
+            return self  # Return the saved Dog instance
+
     @classmethod
     def create(cls,name,breed):
         dog=Dog(name,breed)
@@ -112,3 +119,54 @@ class Dog:
             return None
         
         return cls.new_from_db(row)
+    
+
+    @classmethod
+    def find_by_name_and_breed(cls,name,breed):
+        
+        sql = '''
+        
+        SELECT * FROM dogs 
+        
+        WHERE name = ? AND breed = ?
+        
+        
+        '''
+        
+        CURSOR.execute(sql,(name,breed))
+        
+        row=CURSOR.fetchone()
+        
+        if row is None:
+            return None
+        
+        
+        return cls.new_from_db(row)
+    
+    
+    
+    @classmethod
+    def find_or_create_by(cls, name, breed):
+        # Check if a dog with the provided name and breed already exists
+        existing_dog = cls.find_by_name_and_breed(name, breed)
+        
+        if existing_dog:
+            # If the dog exists, return it
+            return existing_dog
+        else:
+            # If the dog doesn't exist, create a new one and return it
+            new_dog = cls.create(name, breed)
+            return new_dog
+    def update(self):
+    # Update the name of the dog in the database
+        sql = """
+            UPDATE dogs
+            SET name = ?,
+                breed = ?
+            WHERE id = ?
+        """
+        CURSOR.execute(sql, (self.name,self.breed, self.id))
+        CONN.commit()
+
+        # Update the name attribute of the Dog instance
+     
